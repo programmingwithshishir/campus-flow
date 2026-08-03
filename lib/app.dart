@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'features/tasks/pages/task_manager_page.dart';
+import 'pages/main_navigation_page.dart';
 
 class TaskFlowApp extends StatelessWidget {
   const TaskFlowApp({super.key});
@@ -33,7 +33,7 @@ class TaskFlowApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF0F172A),
       ),
-      home: const TaskManagerPage(),
+      home: const MainNavigationPage(),
     );
   }
 }

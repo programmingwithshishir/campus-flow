@@ -123,7 +123,7 @@ class _TaskManagerPageState extends State<TaskManagerPage> with WidgetsBindingOb
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Campus Flow',
+          'To Do',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w800,
             color: titleColor,

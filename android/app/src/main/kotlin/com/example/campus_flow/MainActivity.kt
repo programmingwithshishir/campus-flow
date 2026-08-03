@@ -29,6 +29,15 @@ class MainActivity : FlutterActivity() {
                     TaskWidgetProvider.updateAll(this)
                     result.success(null)
                 }
+                "loadAttendance" -> {
+                    val attendance = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(ATTENDANCE_KEY, "[]")
+                    result.success(attendance)
+                }
+                "saveAttendance" -> {
+                    val attendance = call.argument<String>("attendance") ?: "[]"
+                    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(ATTENDANCE_KEY, attendance).apply()
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -46,6 +55,7 @@ class MainActivity : FlutterActivity() {
         const val CHANNEL_NAME = "campus_flow.widget_sync"
         const val PREFS_NAME = "campus_flow_widget_store"
         const val TASKS_KEY = "tasks"
+        const val ATTENDANCE_KEY = "attendance"
 
         private var instance: MainActivity? = null
 
