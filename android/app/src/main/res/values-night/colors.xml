@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#000000</color>
+    <color name="widget_border">#000000</color>
+    <color name="task_text_primary">#F8FAFC</color>
+    <color name="task_text_completed">#64748B</color>
+    <color name="task_divider">@android:color/transparent</color>
+    <color name="empty_text_color">#64748B</color>
+    <color name="checkbox_unchecked_bg">#121212</color>
+    <color name="checkbox_unchecked_border">#404040</color>
+</resources>
