@@ -1,7 +1,11 @@
 package com.example.campus_flow
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.StrikethroughSpan
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import androidx.core.content.ContextCompat
@@ -54,15 +58,18 @@ class TaskWidgetFactory(private val context: Context) : RemoteViewsService.Remot
         val task = tasks[position]
         val views = RemoteViews(context.packageName, R.layout.task_widget_item)
 
-        views.setTextViewText(R.id.task_title, task.title)
-
         val primaryTextColor = ContextCompat.getColor(context, R.color.task_text_primary)
         val completedTextColor = ContextCompat.getColor(context, R.color.task_text_completed)
 
         if (task.isCompleted) {
+            val spannable = SpannableString(task.title).apply {
+                setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            views.setTextViewText(R.id.task_title, spannable)
             views.setTextColor(R.id.task_title, completedTextColor)
             views.setImageViewResource(R.id.task_checkbox, R.drawable.ic_checkbox_checked)
         } else {
+            views.setTextViewText(R.id.task_title, task.title)
             views.setTextColor(R.id.task_title, primaryTextColor)
             views.setImageViewResource(R.id.task_checkbox, R.drawable.ic_checkbox_unchecked)
         }
@@ -74,10 +81,23 @@ class TaskWidgetFactory(private val context: Context) : RemoteViewsService.Remot
         }
         views.setImageViewResource(R.id.task_priority_flag, priorityRes)
 
+        // Open app when clicking anywhere on the item (row container / title text)
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.task_item_container, openAppPendingIntent)
+        views.setOnClickPendingIntent(R.id.task_title, openAppPendingIntent)
+
+        // Toggle task completion ONLY when clicking the checkbox icon
         val fillInIntent = Intent().apply {
             putExtra(TaskWidgetProvider.EXTRA_TASK_ID, task.id)
         }
-        views.setOnClickFillInIntent(R.id.task_item_container, fillInIntent)
         views.setOnClickFillInIntent(R.id.task_checkbox, fillInIntent)
 
         return views

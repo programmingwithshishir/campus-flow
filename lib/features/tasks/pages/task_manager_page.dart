@@ -165,7 +165,7 @@ class _TaskManagerPageState extends State<TaskManagerPage> with WidgetsBindingOb
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 96),
                     itemCount: _tasks.length,
                     itemBuilder: (context, index) {
                       final task = _tasks[index];

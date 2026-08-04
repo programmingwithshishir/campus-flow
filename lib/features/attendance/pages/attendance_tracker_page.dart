@@ -85,7 +85,7 @@ class _AttendanceTrackerPageState extends State<AttendanceTrackerPage> {
       builder: (dialogContext) => _DeleteWarningDialog(
         title: 'Are you sure you want to delete "$subjectName"?',
         message: 'This action will permanently remove this subject and all associated absence history logs.',
-        countdownSeconds: 10,
+        countdownSeconds: 5,
       ),
     );
 
@@ -101,7 +101,7 @@ class _AttendanceTrackerPageState extends State<AttendanceTrackerPage> {
       builder: (dialogContext) => const _DeleteWarningDialog(
         title: 'Are you sure you want to delete ALL subjects?',
         message: 'This action will permanently delete ALL subjects and clear all associated absence history logs. This action cannot be undone.',
-        countdownSeconds: 10,
+        countdownSeconds: 5,
       ),
     );
 
@@ -275,7 +275,7 @@ class _AttendanceTrackerPageState extends State<AttendanceTrackerPage> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 96),
                     itemCount: _subjects.length,
                     itemBuilder: (context, index) {
                       final subject = _subjects[index];
@@ -400,7 +400,7 @@ class _DeleteWarningDialog extends StatefulWidget {
   const _DeleteWarningDialog({
     required this.title,
     required this.message,
-    this.countdownSeconds = 10,
+    this.countdownSeconds = 5,
   });
 
   final String title;

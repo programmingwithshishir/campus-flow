@@ -4,10 +4,10 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_container_bg"
     android:orientation="vertical"
-    android:paddingStart="20dp"
-    android:paddingTop="16dp"
-    android:paddingEnd="20dp"
-    android:paddingBottom="16dp">
+    android:paddingStart="16dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="10dp">
 
     <ListView
         android:id="@+id/task_list"
