@@ -38,6 +38,15 @@ class MainActivity : FlutterActivity() {
                     getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(ATTENDANCE_KEY, attendance).apply()
                     result.success(null)
                 }
+                "loadRoutines" -> {
+                    val routines = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(ROUTINES_KEY, "[]")
+                    result.success(routines)
+                }
+                "saveRoutines" -> {
+                    val routines = call.argument<String>("routines") ?: "[]"
+                    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(ROUTINES_KEY, routines).apply()
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -56,6 +65,7 @@ class MainActivity : FlutterActivity() {
         const val PREFS_NAME = "campus_flow_widget_store"
         const val TASKS_KEY = "tasks"
         const val ATTENDANCE_KEY = "attendance"
+        const val ROUTINES_KEY = "routines"
 
         private var instance: MainActivity? = null
 

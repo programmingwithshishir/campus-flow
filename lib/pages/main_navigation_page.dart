@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../features/attendance/pages/attendance_tracker_page.dart';
+import '../features/routines/pages/routines_page.dart';
 import '../features/tasks/pages/task_manager_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
@@ -14,6 +15,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
+    RoutinesPage(),
     TaskManagerPage(),
     AttendanceTrackerPage(),
   ];
@@ -49,6 +51,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           indicatorColor: isDark ? const Color(0xFF2563EB).withValues(alpha: 0.3) : const Color(0xFF2563EB).withValues(alpha: 0.15),
           elevation: 0,
           destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.alarm_outlined),
+              selectedIcon: Icon(Icons.alarm_rounded, color: Color(0xFF2563EB)),
+              label: 'Routines',
+            ),
             NavigationDestination(
               icon: Icon(Icons.check_circle_outline_rounded),
               selectedIcon: Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB)),
