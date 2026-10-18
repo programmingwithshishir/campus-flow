@@ -228,5 +228,103 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Routines'), findsOneWidget);
     });
+
+    test('daily checkbox completion and automatic next-day reset logic', () {
+      final todayStr = RoutineItem.todayDateString;
+      final routine = RoutineItem(
+        id: 'r1',
+        name: 'Morning Workout',
+        hour: 6,
+        minute: 30,
+        days: {1, 2, 3, 4, 5, 6, 7},
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      // Initially not completed
+      expect(routine.isCompletedToday, isFalse);
+
+      // Mark completed today
+      final completedToday = routine.copyWith(lastCompletedDate: todayStr);
+      expect(completedToday.isCompletedToday, isTrue);
+
+      // Completed yesterday - must automatically be uncompleted today
+      final completedYesterday = routine.copyWith(lastCompletedDate: '2020-01-01');
+      expect(completedYesterday.isCompletedToday, isFalse);
+
+      // Clear completion
+      final cleared = completedToday.copyWith(clearCompleted: true);
+      expect(cleared.isCompletedToday, isFalse);
+      expect(cleared.lastCompletedDate, isNull);
+    });
+
+    testWidgets('filters today routines by default and allows switching to all routines', (tester) async {
+      final currentWeekday = DateTime.now().weekday;
+      final otherWeekday = currentWeekday == 7 ? 1 : currentWeekday + 1;
+
+      final todayRoutine = RoutineItem(
+        id: 'today_r',
+        name: 'Today Only Routine',
+        hour: 8,
+        minute: 0,
+        days: {currentWeekday},
+        createdAt: DateTime(2026, 1, 1),
+      );
+      final otherDayRoutine = RoutineItem(
+        id: 'other_r',
+        name: 'Other Day Routine',
+        hour: 9,
+        minute: 0,
+        days: {otherWeekday},
+        createdAt: DateTime(2026, 1, 2),
+      );
+
+      final encoded = encodeRoutines([todayRoutine, otherDayRoutine]);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('campus_flow.widget_sync'),
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'loadRoutines') {
+            return encoded;
+          }
+          if (methodCall.method == 'saveRoutines') {
+            return null;
+          }
+          return null;
+        },
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: RoutinesPage(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify "Today" filter pill is selected by default
+      expect(find.text('Today Only Routine'), findsOneWidget);
+      expect(find.text('Other Day Routine'), findsNothing);
+
+      // Switch to "All Routines"
+      await tester.tap(find.text('All Routines'));
+      await tester.pumpAndSettle();
+
+      // Both should now be visible
+      expect(find.text('Today Only Routine'), findsOneWidget);
+      expect(find.text('Other Day Routine'), findsOneWidget);
+
+      // Switch back to "Today"
+      await tester.tap(find.text('Today'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Today Only Routine'), findsOneWidget);
+      expect(find.text('Other Day Routine'), findsNothing);
+
+      // Tap checkbox to mark completed
+      final checkbox = find.byType(Checkbox).first;
+      await tester.tap(checkbox);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1/1 completed'), findsOneWidget);
+    });
   });
 }

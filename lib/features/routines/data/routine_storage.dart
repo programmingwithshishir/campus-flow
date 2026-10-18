@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/widget_sync_service.dart';
 import '../models/routine_item.dart';
 
 class RoutineStorage {
@@ -8,6 +9,10 @@ class RoutineStorage {
 
   static const MethodChannel _channel = MethodChannel('campus_flow.widget_sync');
   static const String _prefsKey = 'campus_flow_routines_data';
+
+  static void setRoutineUpdateListener(VoidCallback onRoutineUpdated) {
+    WidgetSyncService.addListener('onWidgetRoutineUpdated', onRoutineUpdated);
+  }
 
   static Future<List<RoutineItem>> loadRoutines() async {
     // 1. Try MethodChannel first (Android SharedPreferences)

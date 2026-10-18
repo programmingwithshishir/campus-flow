@@ -15,11 +15,13 @@ class RoutinesPage extends StatefulWidget {
 class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver {
   final List<RoutineItem> _routines = [];
   bool _isLoading = true;
+  bool _showTodayOnly = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    RoutineStorage.setRoutineUpdateListener(_loadRoutines);
     _initAndLoad();
   }
 
@@ -110,6 +112,21 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
     await _updateRoutine(updated);
   }
 
+  Future<void> _toggleRoutineCompletion(RoutineItem routine, bool isCompleted) async {
+    final updated = routine.copyWith(
+      lastCompletedDate: isCompleted ? RoutineItem.todayDateString : null,
+      clearCompleted: !isCompleted,
+    );
+    final index = _routines.indexWhere((r) => r.id == updated.id);
+    if (index == -1) return;
+
+    setState(() {
+      _routines[index] = updated;
+      _sortRoutines();
+    });
+    await RoutineStorage.saveRoutines(_routines);
+  }
+
   Future<void> _deleteRoutine(RoutineItem routine) async {
     final deletedIndex = _routines.indexWhere((r) => r.id == routine.id);
     if (deletedIndex == -1) return;
@@ -196,6 +213,9 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
     final primaryColor = isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB);
 
     final activeCount = _routines.where((r) => r.isEnabled).length;
+    final todayRoutines = _routines.where((r) => r.isScheduledForToday).toList();
+    final todayCompletedCount = todayRoutines.where((r) => r.isCompletedToday).length;
+    final displayedRoutines = _showTodayOnly ? todayRoutines : _routines;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -220,7 +240,9 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              '$activeCount active / ${_routines.length} total',
+              _showTodayOnly
+                  ? '$todayCompletedCount/${todayRoutines.length} completed'
+                  : '$activeCount active / ${_routines.length} total',
               style: TextStyle(
                 color: counterTextColor,
                 fontWeight: FontWeight.w600,
@@ -236,24 +258,68 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
             constraints: const BoxConstraints(maxWidth: 720),
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _routines.isEmpty
-                    ? _buildEmptyState(theme, textSecondary, primaryColor, isDark)
-                    : ListView.builder(
-                        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 96),
-                        itemCount: _routines.length,
-                        itemBuilder: (context, index) {
-                          final routine = _routines[index];
-                          return _buildRoutineCard(
-                            routine: routine,
-                            cardBgColor: cardBgColor,
-                            cardBorderColor: cardBorderColor,
-                            textPrimary: textPrimary,
-                            textSecondary: textSecondary,
-                            primaryColor: primaryColor,
-                            isDark: isDark,
-                          );
-                        },
+                : Column(
+                    children: [
+                      // Filter toggle bar
+                      if (_routines.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                          child: Row(
+                            children: [
+                              _FilterPill(
+                                label: 'Today',
+                                count: todayRoutines.length,
+                                isSelected: _showTodayOnly,
+                                onTap: () {
+                                  if (!_showTodayOnly) {
+                                    setState(() => _showTodayOnly = true);
+                                  }
+                                },
+                                isDark: isDark,
+                                primaryColor: primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterPill(
+                                label: 'All Routines',
+                                count: _routines.length,
+                                isSelected: !_showTodayOnly,
+                                onTap: () {
+                                  if (_showTodayOnly) {
+                                    setState(() => _showTodayOnly = false);
+                                  }
+                                },
+                                isDark: isDark,
+                                primaryColor: primaryColor,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // List / Empty State
+                      Expanded(
+                        child: _routines.isEmpty
+                            ? _buildEmptyState(theme, textSecondary, primaryColor, isDark)
+                            : displayedRoutines.isEmpty
+                                ? _buildNoTodayRoutinesState(theme, textSecondary, primaryColor, isDark)
+                                : ListView.builder(
+                                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 96),
+                                    itemCount: displayedRoutines.length,
+                                    itemBuilder: (context, index) {
+                                      final routine = displayedRoutines[index];
+                                      return _buildRoutineCard(
+                                        routine: routine,
+                                        cardBgColor: cardBgColor,
+                                        cardBorderColor: cardBorderColor,
+                                        textPrimary: textPrimary,
+                                        textSecondary: textSecondary,
+                                        primaryColor: primaryColor,
+                                        isDark: isDark,
+                                      );
+                                    },
+                                  ),
                       ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -331,6 +397,66 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
     );
   }
 
+  Widget _buildNoTodayRoutinesState(
+    ThemeData theme,
+    Color textSecondary,
+    Color primaryColor,
+    bool isDark,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.event_available_rounded,
+                size: 56,
+                color: primaryColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No routines for today',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You have no routines scheduled for today. Enjoy your day or explore all your routines.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primaryColor,
+                side: BorderSide(color: primaryColor),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => setState(() => _showTodayOnly = false),
+              icon: const Icon(Icons.list_alt_rounded, size: 18),
+              label: const Text('View All Routines', style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRoutineCard({
     required RoutineItem routine,
     required Color cardBgColor,
@@ -340,7 +466,9 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
     required Color primaryColor,
     required bool isDark,
   }) {
-    final statusColor = routine.isEnabled ? primaryColor : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1));
+    final statusColor = !routine.isEnabled
+        ? (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1))
+        : (routine.isCompletedToday ? const Color(0xFF10B981) : primaryColor);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -377,9 +505,26 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Row 1: Routine Name (left) + Edit + Delete + Switch (right)
+                        // Row 1: Checkbox + Routine Name + Edit + Delete + Switch
                         Row(
                           children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: routine.isCompletedToday,
+                                activeColor: const Color(0xFF10B981),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    _toggleRoutineCompletion(routine, value);
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 routine.name,
@@ -388,12 +533,12 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                  color: routine.isEnabled
-                                      ? textPrimary
-                                      : textSecondary,
-                                  decoration: routine.isEnabled
-                                      ? null
-                                      : TextDecoration.lineThrough,
+                                  color: (!routine.isEnabled || routine.isCompletedToday)
+                                      ? textSecondary
+                                      : textPrimary,
+                                  decoration: (routine.isCompletedToday || !routine.isEnabled)
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                 ),
                               ),
                             ),
@@ -480,6 +625,86 @@ class _RoutinesPageState extends State<RoutinesPage> with WidgetsBindingObserver
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+    required this.isDark,
+    required this.primaryColor,
+  });
+
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool isDark;
+  final Color primaryColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBg = primaryColor.withValues(alpha: isDark ? 0.25 : 0.12);
+    final activeBorder = primaryColor;
+    final activeText = isDark ? const Color(0xFF60A5FA) : primaryColor;
+
+    final inactiveBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final inactiveBorder = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final inactiveText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? activeBg : inactiveBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? activeBorder : inactiveBorder,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? activeText : inactiveText,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? primaryColor.withValues(alpha: isDark ? 0.35 : 0.2)
+                      : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? activeText : inactiveText,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

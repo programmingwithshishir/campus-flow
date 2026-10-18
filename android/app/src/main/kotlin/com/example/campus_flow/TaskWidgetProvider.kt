@@ -17,11 +17,18 @@ class TaskWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
-        if (intent.action == ACTION_TOGGLE_TASK) {
-            val taskId = intent.getStringExtra(EXTRA_TASK_ID) ?: return
-            toggleTask(context, taskId)
-            updateAll(context)
-            MainActivity.notifyWidgetTaskUpdated()
+        when (intent.action) {
+            ACTION_TOGGLE_TASK -> {
+                val taskId = intent.getStringExtra(EXTRA_TASK_ID) ?: return
+                toggleTask(context, taskId)
+                updateAll(context)
+                MainActivity.notifyWidgetTaskUpdated()
+            }
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED -> {
+                updateAll(context)
+            }
         }
     }
 
@@ -68,6 +75,7 @@ class TaskWidgetProvider : AppWidgetProvider() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
                 views.setOnClickPendingIntent(R.id.empty_view, openAppPendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_header_title, openAppPendingIntent)
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
                 appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.task_list)

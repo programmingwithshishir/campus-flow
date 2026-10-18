@@ -10,6 +10,7 @@ class RoutineItem {
     required this.days,
     this.isEnabled = true,
     required this.createdAt,
+    this.lastCompletedDate,
   });
 
   final String id;
@@ -19,8 +20,22 @@ class RoutineItem {
   final Set<int> days; // 1 = Monday, 7 = Sunday (matching DateTime.monday .. DateTime.sunday)
   final bool isEnabled;
   final DateTime createdAt;
+  final String? lastCompletedDate; // format: 'YYYY-MM-DD'
 
   TimeOfDay get timeOfDay => TimeOfDay(hour: hour, minute: minute);
+
+  static String get todayDateString {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  bool get isCompletedToday {
+    return lastCompletedDate != null && lastCompletedDate == todayDateString;
+  }
+
+  bool get isScheduledForToday {
+    return days.contains(DateTime.now().weekday);
+  }
 
   String get timeString {
     final period = hour >= 12 ? 'PM' : 'AM';
@@ -75,6 +90,8 @@ class RoutineItem {
     Set<int>? days,
     bool? isEnabled,
     DateTime? createdAt,
+    String? lastCompletedDate,
+    bool clearCompleted = false,
   }) {
     return RoutineItem(
       id: id ?? this.id,
@@ -84,6 +101,7 @@ class RoutineItem {
       days: days ?? this.days,
       isEnabled: isEnabled ?? this.isEnabled,
       createdAt: createdAt ?? this.createdAt,
+      lastCompletedDate: clearCompleted ? null : (lastCompletedDate ?? this.lastCompletedDate),
     );
   }
 
@@ -96,6 +114,7 @@ class RoutineItem {
       'days': days.toList()..sort(),
       'isEnabled': isEnabled,
       'createdAt': createdAt.toIso8601String(),
+      'lastCompletedDate': lastCompletedDate,
     };
   }
 
@@ -111,6 +130,7 @@ class RoutineItem {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      lastCompletedDate: json['lastCompletedDate']?.toString(),
     );
   }
 }

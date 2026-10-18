@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import '../../../core/widget_sync_service.dart';
 import '../models/task_item.dart';
 
 class TaskStorage {
@@ -8,11 +9,7 @@ class TaskStorage {
   static const MethodChannel _channel = MethodChannel('campus_flow.widget_sync');
 
   static void setTaskUpdateListener(VoidCallback onTaskUpdated) {
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onWidgetTaskUpdated') {
-        onTaskUpdated();
-      }
-    });
+    WidgetSyncService.addListener('onWidgetTaskUpdated', onTaskUpdated);
   }
 
   static Future<List<TaskItem>> loadTasks() async {

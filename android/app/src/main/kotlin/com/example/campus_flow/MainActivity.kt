@@ -45,6 +45,7 @@ class MainActivity : FlutterActivity() {
                 "saveRoutines" -> {
                     val routines = call.argument<String>("routines") ?: "[]"
                     getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(ROUTINES_KEY, routines).apply()
+                    RoutineWidgetProvider.updateAll(this)
                     result.success(null)
                 }
                 else -> result.notImplemented()
@@ -72,6 +73,12 @@ class MainActivity : FlutterActivity() {
         fun notifyWidgetTaskUpdated() {
             Handler(Looper.getMainLooper()).post {
                 instance?.channel?.invokeMethod("onWidgetTaskUpdated", null)
+            }
+        }
+
+        fun notifyWidgetRoutineUpdated() {
+            Handler(Looper.getMainLooper()).post {
+                instance?.channel?.invokeMethod("onWidgetRoutineUpdated", null)
             }
         }
     }
